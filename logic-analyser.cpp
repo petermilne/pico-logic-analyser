@@ -107,6 +107,23 @@ void print_capture_buf(const uint32_t *buf, uint pin_base, uint pin_count, uint3
     }
 }
 
+int pico_fgets(char* buf, int maxbuf, unsigned to_msec)
+{
+    int ii = 0;
+
+    for (ii = 0; ii < maxbuf-1; ++ii){
+        int cc = getchar_timeout_us(to_msec*1000);
+        if (cc == PICO_ERROR_TIMEOUT){
+            return cc;
+        }else if (cc == '\n' || cc == '\r'){
+            return cc;
+        }else{
+            buf[ii] = cc;
+        }
+    }
+    buf[ii] = '\0';
+    return ii;
+}
 int main() {
     stdio_init_all();
     printf("PIO logic analyser example c++ version\n");
@@ -136,10 +153,7 @@ int main() {
  
     while(1){
         printf("CH:%d clockdiv %f or <CR> to continue unchanged\n", capture_pin_count, clockdiv);
-
-        getchar();
-
-//        fgets(command, 80, stdin);
+        pico_fgets(command, 80, 10000);        
         printf("entered:\"%s\"\n", command);
         sscanf(command, "%d %f\n", &capture_pin_count, &clockdiv);
     	printf("Channels:%d clockdiv %.0f\n", capture_pin_count, clockdiv);
@@ -170,6 +184,6 @@ int main() {
     // first transition. Wait until the last sample comes in from the DMA.
    	 dma_channel_wait_for_finish_blocking(dma_chan);
 
-         print_capture_buf(capture_buf, CAPTURE_PIN_BASE, CAPTURE_PIN_COUNT, CAPTURE_N_SAMPLES);
+         print_capture_buf(capture_buf, CAPTURE_PIN_BASE, capture_pin_count, CAPTURE_N_SAMPLES);
     }
 }
